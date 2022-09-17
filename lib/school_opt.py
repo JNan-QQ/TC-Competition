@@ -36,11 +36,7 @@ class SchoolOpt:
         school_list = response['info']
         school = {}
         for i in school_list:
-            school[i['name']] = {
-                'id': i['id'],
-                'name': i['name'],
-                'zone_id': zid
-            }
+            school[i['name']] = i['id']
         return school
 
     # 在指定地区添加学校
@@ -84,7 +80,7 @@ class SchoolOpt:
         if not response['info']['teachers']:
             return teacher_info
         for teacher in response['info']['teachers'][0][0]['teachers']:
-            teacher_info[teacher['name']] = teacher
+            teacher_info[teacher['name']] = teacher['id']
 
         return teacher_info
 
@@ -136,6 +132,8 @@ class SchoolOpt:
         response = response.json()
         return response['info']['teachers'][0]['id']
 
+
+school_opt = SchoolOpt()
 
 if __name__ == '__main__':
     print(SchoolOpt().get_student_list(95161))
