@@ -4,37 +4,14 @@
 # @Author    :JN
 
 import os
+import signal
 import traceback
 from os.path import isfile, join
 
 import pandas as pd
 
+from lib.common import zid_dict
 from lib.school_opt import school_opt
-
-zid_dict = {
-    '亭湖区': 257,
-    '亭湖': 257,
-    '盐都区': 2578,
-    '盐都': 2578,
-    '响水县': 2579,
-    '响水': 2579,
-    '滨海县': 2580,
-    '滨海': 2580,
-    '阜宁县': 2581,
-    '阜宁': 2581,
-    '射阳县': 2582,
-    '射阳': 2582,
-    '建湖县': 2583,
-    '建湖': 2583,
-    '东台市': 2584,
-    '东台': 2584,
-    '大丰区': 2585,
-    '大丰': 2585,
-    '市直属': 3031,
-    '市直': 3031,
-    '开发区': 3032,
-    '盐南高新区': 3033
-}
 
 
 # 列表去重并不改变顺序
@@ -61,8 +38,10 @@ class ExcelOpt:
     def get_file_data(self):
         file_path_list = self.get_file_path()
         df = pd.DataFrame()
+        # 遍历目录下的表格
         for file_path in file_path_list:
             data = pd.read_excel(io=file_path, header=1, sheet_name=None)
+            # 遍历工作表
             for sheet in data:
                 if data[sheet].empty:
                     continue
@@ -76,32 +55,41 @@ class ExcelOpt:
         # 判断是否是分校
         class_list = self.excel_data['班级'].values.tolist()
         school_list = self.excel_data['学校（公章一致）'].values.tolist()
-        for index,class_name in enumerate(class_list):
+        for index, class_name in enumerate(class_list):
             if not str(class_name).isdigit():
-                class_num = ''.join()
-                s_name = school_list[index] + class_name
+                class_num: str = ''.join(list(filter(str.isdigit, class_name)))
+                s_name: str = school_list[index] + class_name.split(class_num)[0] + '校区'
+                s_name = s_name.replace('校区校区', '校区').strip()
+                school_list[index] = s_name
+                class_list[index] = class_num
+        self.excel_data['学校（公章一致）'] = school_list
+        self.excel_data['班级'] = class_list
 
         # 表格的学校名称
-        school_list = list_set_key(self.excel_data['学校（公章一致）'].values.tolist())
+        school_list = list_set_key(school_list)
         # 线上学校列表
         school_list_online = None
         # 根据地区遍历学校
         for school_name in school_list:
-            zid_ = self.excel_data[self.excel_data['学校（公章一致）'] == school_name].at[0, 'zid']
+            zid_ = self.excel_data[self.excel_data['学校（公章一致）'] == school_name]
+            zid_ = zid_.iat[0, 8]
             if zid_ != zid:
                 school_list_online = school_opt.get_school_list(zid_)
                 zid = zid_
-
             if school_name in school_list_online:
                 school_id[school_name] = school_list_online[school_name]
+                print(f'学校 {school_name} 已存在')
             else:
+                # noinspection PyBroadException
                 try:
                     school_opt.add_school(zid, school_name)
-                    school_list_online = school_opt.get_school_list()
+                    school_list_online = school_opt.get_school_list(zid_)
                     school_id[school_name] = school_list_online[school_name]
+                    print(f'学校 {school_name} 添加成功')
                 except Exception as e:
-                    print(e)
+                    traceback.print_exc()
                     school_id[school_name] = 0
+                    print(f'学校 {school_name} 添加失败！！！！')
         self.excel_data['sid'] = self.excel_data['学校（公章一致）'].map(lambda x: school_id[x])
 
     def format_teacher_id(self):
@@ -112,40 +100,101 @@ class ExcelOpt:
 
         for phone in phone_list:
             df = self.excel_data[self.excel_data['备注'] == phone]
-            teacher_name = df.at[0, '指导老师']
-            sid_ = df.at[0, 'sid']
-            username_t = phone
-            zid = df.at[0, 'zid']
+            teacher_name = df.iat[0, 6].strip()
+            sid_ = df.iat[0, 9]
+            username_t = str(phone)
+            zid = df.iat[0, 8]
+            if sid_ == 0:
+                teacher_id[username_t] = 0
+                continue
             if sid_ != sid:
-                teacher_list_online = school_opt.get_teacher_list(sid_)
+                teacher_list_online = school_opt.get_teacher_list(sid_, zid)
                 sid = sid_
-            if teacher_name in teacher_list_online:
-                teacher_id[phone] = teacher_list_online[teacher_name]
+            if username_t in teacher_list_online:
+                print(f'教师 {teacher_name}({username_t}) 已存在')
+                teacher_id[username_t] = teacher_list_online[username_t]
             else:
+                # noinspection PyBroadException
                 try:
                     res = school_opt.add_teacher(teacher_name, username_t, phone, zid, sid_)
                     if res:
-                        teacher_id[phone] = res
+                        teacher_id[username_t] = res
+                        print(f'教师 {teacher_name}({username_t}) 添加成功')
                     else:
-                        teacher_id[phone] = school_opt.search_teacher_info(username_t)
+                        print(f'教师 {teacher_name}({username_t}) 已存在')
+                        teacher_id[username_t] = school_opt.search_teacher_info(username_t)
                 except Exception as e:
-                    print(e)
-                    teacher_id[phone] = 0
-        self.excel_data['tid'] = self.excel_data['备注'].map(lambda x: teacher_id[x])
+                    traceback.print_exc()
+                    teacher_id[username_t] = 0
+                    print(f'教师 {teacher_name}({username_t}) 添加失败！！！！')
+        self.excel_data['tid'] = self.excel_data['备注'].map(lambda x: teacher_id[str(x)])
 
     def format_class_id(self):
-        pass
+        self.excel_data['班级'] = self.excel_data['班级'].map(lambda x: str(x))
+        self.excel_data['tid'] = self.excel_data['tid'].map(lambda x: str(x))
+        self.excel_data['s_c'] = self.excel_data['tid'].str.cat(self.excel_data['班级'], sep="-")
+        class_teacher = list_set_key(self.excel_data['s_c'].values.tolist())
+
+        tid = None
+        class_list_online = None
+        class_id = {}
+        for class_name in class_teacher:
+            tid_ = class_name.split('-')[0]
+            name = class_name.split('-')[-1]
+            if tid_ == 0:
+                class_id[class_name] = 0
+            if tid_ != tid:
+                class_list_online = school_opt.get_class_list(tid_)
+                tid = tid_
+            if name in class_list_online:
+                print(f'班级 {name}({tid_}) 已存在')
+                class_id[class_name] = class_list_online[name]
+                # 添加体验套餐
+                print('-- 添加班级体验套餐')
+                school_opt.setClassCourse(class_list_online[name])
+            else:
+                # noinspection PyBroadException
+                try:
+                    school_opt.add_class_ss(tid_, name, name[0])
+                    class_list_online = school_opt.get_class_list(tid_)
+                    print(f'班级 {name}({tid_}) 添加成功')
+                    class_id[class_name] = class_list_online[name]
+                    # 添加体验套餐
+                    print('-- 添加班级体验套餐')
+                    school_opt.setClassCourse(class_list_online[name])
+                except Exception as e:
+                    traceback.print_exc()
+                    class_id[class_name] = 0
+                    print(f'班级 {name}({tid_}) 添加失败')
+        self.excel_data['cid'] = self.excel_data['s_c'].map(lambda x: class_id[x])
 
     # 格式化数据
     def format_df(self):
         # 获取表格原数据
+        print('1.开始获取表格数据：')
         self.get_file_data()
+        print('表格数据获取成功！\n')
         # 添加区域id列
+        print('2.整理区域id')
         self.excel_data['zid'] = self.excel_data['县（区）'].map(lambda x: zid_dict[x])
+        print('区域id整理成功！\n')
         # 添加学校id
+        print('3.整理学校id')
         self.format_school_id()
+        print('学校id整理成功！\n')
+        # 添加教师id
+        print('4.整理教师id')
+        self.format_teacher_id()
+        print('教师id整理成功！\n')
+        # 添加班级id
+        print('3.整理班级id')
+        self.format_class_id()
+        print('班级id整理成功！\n')
+        # 保存
+        print('保存')
+        del self.excel_data['s_c']
+        self.excel_data.to_excel(os.path.join(self.excel_path, '2-new/user_add.xlsx'), index=False)
 
 
 if __name__ == '__main__':
-    a = ExcelOpt().format_df()
-    print(a)
+    pass
