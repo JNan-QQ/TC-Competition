@@ -5,7 +5,7 @@
 import os
 import traceback
 from threading import Lock
-from time import time, sleep
+from time import time
 
 import pandas as pd
 
@@ -33,6 +33,7 @@ class StudentInfo:
         t_c_s = tid + '_' + cid
 
         if cid == '0':
+            print('班级不存在，跳过')
             data['uid'] = 0
             return data
 

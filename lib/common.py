@@ -5,23 +5,34 @@
 
 from concurrent.futures import ThreadPoolExecutor
 
-# 登录url
-login_host = 'https://jiangnan-www.b.waiyutong.org'
-# 代理商网址
-dls_host = 'http://jiangnan-dls.b.waiyutong.org/'
+env = 'beta'
+if env == 'alpha':
+    # 登录url
+    login_host = 'https://jiangnan-www.b.waiyutong.org'
+    # 代理商网址
+    dls_host = 'http://jiangnan-dls.b.waiyutong.org/'
+    # 代理商用户名
+    username = 'TsWeb08006'
+    # 代理商密码
+    password = 'e10adc3949ba59abbe56e057f20f883e'
 
-# 代理商用户名
-username = 'TsWeb08006'
-# 代理商密码
-password = 'e10adc3949ba59abbe56e057f20f883e'
+elif env == 'beta':
+    # 登录url
+    login_host = 'https://www-beta.waiyutong.org'
+    # 代理商网址
+    dls_host = 'http://dls-beta.waiyutong.org'
+    # 代理商用户名
+    username = '伊犁渠道专员'
+    # 代理商密码
+    password = '4cb4643ba064093bafcef6156a165ba2'
 
 # 实例化线程池
-threadPool = ThreadPoolExecutor(max_workers=5)
+threadPool = ThreadPoolExecutor(max_workers=1)
 
 # 地区id 表
 zid_dict = {
-    '亭湖区': 257,
-    '亭湖': 257,
+    '亭湖区': 2577,
+    '亭湖': 2577,
     '盐都区': 2578,
     '盐都': 2578,
     '响水县': 2579,
@@ -58,8 +69,8 @@ version_alias_id = 572
 course_id = 428
 course_type = 8
 course_city_id = 91221
-start_time = '2022-09-18 11:53'
-end_time = '2022-10-18 11:53'
+start_time = '2022-09-30 00:00'
+end_time = '2022-10-08 00:00'
 
 # 班级学年
 term = 2022

@@ -4,7 +4,6 @@
 # @Author    :JN
 
 import os
-import signal
 import traceback
 from os.path import isfile, join
 
@@ -105,6 +104,7 @@ class ExcelOpt:
             username_t = str(phone)
             zid = df.iat[0, 8]
             if sid_ == 0:
+                print('教师学校不存在，跳过')
                 teacher_id[username_t] = 0
                 continue
             if sid_ != sid:
@@ -122,7 +122,13 @@ class ExcelOpt:
                         print(f'教师 {teacher_name}({username_t}) 添加成功')
                     else:
                         print(f'教师 {teacher_name}({username_t}) 已存在')
-                        teacher_id[username_t] = school_opt.search_teacher_info(username_t)
+                        # noinspection PyBroadException
+                        try:
+                            teacher_id[username_t] = school_opt.search_teacher_info(username_t)
+                        except Exception as e:
+                            traceback.print_exc()
+                            teacher_id[username_t] = 0
+                            print(f'-- 可能注册成学生账号')
                 except Exception as e:
                     traceback.print_exc()
                     teacher_id[username_t] = 0
@@ -141,31 +147,30 @@ class ExcelOpt:
         for class_name in class_teacher:
             tid_ = class_name.split('-')[0]
             name = class_name.split('-')[-1]
-            if tid_ == 0:
+            if tid_ == '0' or tid_ == 0:
+                print(f'班级 {name}({tid_}) 教师不存在，跳过\n')
                 class_id[class_name] = 0
+                continue
             if tid_ != tid:
                 class_list_online = school_opt.get_class_list(tid_)
                 tid = tid_
             if name in class_list_online:
-                print(f'班级 {name}({tid_}) 已存在')
+                print(f'班级 {name}({tid_}) 已存在\n')
                 class_id[class_name] = class_list_online[name]
-                # 添加体验套餐
-                print('-- 添加班级体验套餐')
-                school_opt.setClassCourse(class_list_online[name])
             else:
                 # noinspection PyBroadException
                 try:
                     school_opt.add_class_ss(tid_, name, name[0])
                     class_list_online = school_opt.get_class_list(tid_)
-                    print(f'班级 {name}({tid_}) 添加成功')
                     class_id[class_name] = class_list_online[name]
+                    print(f'班级 {name}({tid_}) 添加成功')
                     # 添加体验套餐
-                    print('-- 添加班级体验套餐')
+                    print('-- 添加班级体验套餐\n')
                     school_opt.setClassCourse(class_list_online[name])
                 except Exception as e:
                     traceback.print_exc()
                     class_id[class_name] = 0
-                    print(f'班级 {name}({tid_}) 添加失败')
+                    print(f'班级 {name}({tid_}) 添加失败\n')
         self.excel_data['cid'] = self.excel_data['s_c'].map(lambda x: class_id[x])
 
     # 格式化数据
