@@ -92,6 +92,9 @@ class ExcelOpt:
         self.excel_data['sid'] = self.excel_data['学校（公章一致）'].map(lambda x: school_id[x])
 
     def format_teacher_id(self):
+        self.excel_data['备注'] = self.excel_data['备注'].map(lambda x: str(x))
+        self.excel_data['备注'] = self.excel_data['指导老师'].str.cat(self.excel_data['备注'])
+        self.excel_data['备注'] = self.excel_data['指导老师'].str.cat(self.excel_data['备注'], sep="")
         phone_list = list_set_key(self.excel_data['备注'].values.tolist())
         teacher_list_online = None
         sid = None
