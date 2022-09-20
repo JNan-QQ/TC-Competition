@@ -27,7 +27,7 @@ elif env == 'beta':
     password = '4cb4643ba064093bafcef6156a165ba2'
 
 # 实例化线程池
-threadPool = ThreadPoolExecutor(max_workers=1)
+threadPool = ThreadPoolExecutor(max_workers=5)
 
 # 地区id 表
 zid_dict = {
@@ -60,15 +60,15 @@ pid = 17
 # 城市id 盐城
 city_id = 323
 # 学校类型 1：小学 2：初中 3：高中
-school_type = 1
+school_type = 3
 # 地区教材id
-book_version_id = 29
-version_alias_id = 572
+book_version_id = 38
+version_alias_id = 603
 
 # 盐城地区班级体验套餐
-course_id = 428
+course_id = 436
 course_type = 8
-course_city_id = 91221
+course_city_id = 91941
 start_time = '2022-09-30 00:00'
 end_time = '2022-10-08 00:00'
 

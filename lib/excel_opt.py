@@ -92,9 +92,7 @@ class ExcelOpt:
         self.excel_data['sid'] = self.excel_data['学校（公章一致）'].map(lambda x: school_id[x])
 
     def format_teacher_id(self):
-        self.excel_data['备注'] = self.excel_data['备注'].map(lambda x: str(x))
         self.excel_data['备注'] = self.excel_data['指导老师'].str.cat(self.excel_data['备注'])
-        self.excel_data['备注'] = self.excel_data['指导老师'].str.cat(self.excel_data['备注'], sep="")
         phone_list = list_set_key(self.excel_data['备注'].values.tolist())
         teacher_list_online = None
         sid = None
@@ -139,7 +137,6 @@ class ExcelOpt:
         self.excel_data['tid'] = self.excel_data['备注'].map(lambda x: teacher_id[str(x)])
 
     def format_class_id(self):
-        self.excel_data['班级'] = self.excel_data['班级'].map(lambda x: str(x))
         self.excel_data['tid'] = self.excel_data['tid'].map(lambda x: str(x))
         self.excel_data['s_c'] = self.excel_data['tid'].str.cat(self.excel_data['班级'], sep="-")
         class_teacher = list_set_key(self.excel_data['s_c'].values.tolist())
@@ -163,7 +160,7 @@ class ExcelOpt:
             else:
                 # noinspection PyBroadException
                 try:
-                    school_opt.add_class_ss(tid_, name, name[0])
+                    school_opt.add_class_ss(tid_, name, name[:2])
                     class_list_online = school_opt.get_class_list(tid_)
                     class_id[class_name] = class_list_online[name]
                     print(f'班级 {name}({tid_}) 添加成功')
@@ -185,6 +182,10 @@ class ExcelOpt:
         # 添加区域id列
         print('2.整理区域id')
         self.excel_data['zid'] = self.excel_data['县（区）'].map(lambda x: zid_dict[x])
+        self.excel_data['备注'] = self.excel_data['备注'].map(lambda x: str(x))
+        self.excel_data['班级'] = self.excel_data['班级'].map(lambda x: str(x))
+        self.excel_data['姓名'] = self.excel_data['姓名'].map(lambda x: x.replace(' ', '').strip())
+        self.excel_data['指导老师'] = self.excel_data['指导老师'].map(lambda x: x.replace(' ', '').strip())
         print('区域id整理成功！\n')
         # 添加学校id
         print('3.整理学校id')
